@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dipper Co Moon Phase Version 1.0</title>
+  <style>
+    body {
+      font-family: Panton, sans-serif;
+      padding: 20px;
+      background: #000;
+      color: #fff;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      text-align: center;
+    }
+    label, input, button {
+      margin-top: 10px;
+      display: block;
+      width: 100%;
+    }
+    img {
+      margin-top: 20px;
+      max-width: 100%;
+      height: auto;
+      border: 2px solid #fff;
+    }
+    .info {
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+    .download-link {
+      margin-top: 10px;
+      display: inline-block;
+      background: #1a1a1a;
+      padding: 10px;
+      color: #0ff;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+    .download-link:hover {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dipper Co. Moon Phase Version 1.0</h1>
+    <label for="date">Date</label>
+    <input type="date" id="date" min="2011-01-01">
+
+    <label for="time">Time (Local)</label>
+    <input type="time" id="time">
+
+    <button onclick="getMoonData()">Get Moon Phase</button>
+
+    <div id="image-preview"></div>
+    <div class="info">
+      <p><strong>Illumination:</strong> <span id="illumination">-</span>%</p>
+      <p><strong>Phase:</strong> <span id="phaseName">Unknown</span></p>
+      <p><strong>Moon Age:</strong> <span id="age">-</span> days</p>
+      <p><strong>Distance:</strong> <span id="distance">-</span> km</p>
+    </div>
+  </div>
+
+  <script>
+    const tifFolderMap = {
+      2011: "a000000/a003800/a003810",
+      2012: "a000000/a003800/a003894",
+      2013: "a000000/a004000/a004000",
+      2014: "a000000/a004100/a004118",
+      2015: "a000000/a004200/a004236",
+      2016: "a000000/a004400/a004404",
+      2017: "a000000/a004500/a004537",
+      2018: "a000000/a004600/a004604",
+      2019: "a000000/a004400/a004442",
+      2020: "a000000/a004700/a004768",
+      2021: "a000000/a004800/a004874",
+      2022: "a000000/a004900/a004955",
+      2023: "a000000/a005000/a005048",
+      2024: "a000000/a005100/a005187",
+      2025: "a000000/a005400/a005415"
+    };
+
+    function getMoonData() {
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+
+      if (!date || !time) {
+        alert('Please enter both date and time');
+        return;
+      }
+
+      const localDateTime = new Date(`${date}T${time}`);
+      const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
+      const isoTime = utcDateTime.toISOString().slice(0, 16);
+      const apiUrl = `https://svs.gsfc.nasa.gov/api/dialamoon/${isoTime}`;
+
+      fetch(apiUrl)
+        .then(res => res.json())
+        .then(data => {
+          const illumination = parseFloat(data.phase).toFixed(2);
+          const age = parseFloat(data.age).toFixed(2);
+          const distance = data.distance ? parseFloat(data.distance).toLocaleString() : 'Unavailable';
+          const jpgUrl = data.image?.url || data.image_highres?.url || '';
+
+          document.getElementById('illumination').innerText = illumination;
+          document.getElementById('age').innerText = age;
+          document.getElementById('distance').innerText = distance;
+
+          // Determine phase name
+          let phaseName = 'Unknown';
+          const illum = parseFloat(illumination);
+          if (illum < 1) phaseName = 'New Moon';
+          else if (illum < 25) phaseName = 'Waxing Crescent';
+          else if (illum < 50) phaseName = 'First Quarter';
+          else if (illum < 99) phaseName = 'Waxing Gibbous';
+          else if (illum >= 99) phaseName = 'Full Moon';
+          if (illum < 99 && age > 14.77) {
+            if (illum > 50) phaseName = 'Waning Gibbous';
+            else if (illum > 25) phaseName = 'Last Quarter';
+            else phaseName = 'Waning Crescent';
+          }
+          document.getElementById('phaseName').innerText = phaseName;
+
+          // Determine year and frame number
+          const year = new Date(date).getFullYear();
+          const frameMatch = jpgUrl.match(/moon\.(\d+)\.jpg/);
+          let tifLink = '';
+
+          if (frameMatch && tifFolderMap[year]) {
+            const frameNumber = frameMatch[1];
+            tifLink = `https://svs.gsfc.nasa.gov/vis/${tifFolderMap[year]}/frames/1920x1080_16x9_30p/plain/moon.${frameNumber}.tif`;
+
+            document.getElementById('image-preview').innerHTML = `
+              <img src="${jpgUrl}" alt="Moon Image">
+              <a href="${tifLink}" class="download-link" download>⬇ Download High-Res TIF</a>
+            `;
+          } else {
+            document.getElementById('image-preview').innerHTML = '<p>No image available</p>';
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching moon data:', err);
+          alert('Failed to fetch moon data. Please try again.');
+        });
+    }
+  </script>
+</body>
+</html>

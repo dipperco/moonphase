@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Moments Under the Moon by Dipper Co.</title>
+  <style>
+    body { background: #000; color: #fff; font-family: Panton, sans-serif; padding: 20px; }
+    .container { max-width: 600px; margin: auto; text-align: center; }
+    label, input, button { margin-top: 10px; display: block; width: 100%; }
+
+    /* Frame wrapper */
+    .frame-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-top: 20px;
+      width: 350px;  /* Increased size */
+      height: 350px;
+      background: url('assets/frame.png') no-repeat center / contain;
+    }
+
+    /* Moon image inside the frame */
+    .moon-image {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300px;  /* Bigger moon */
+      height: 300px;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .info { margin-top: 20px; font-size: 1.2em; }
+    .note { margin-top: 15px; font-size: 0.9em; color: #ccc; }
+    .footnote { margin-top: 30px; font-size: 0.85em; color: #999; }
+    .footnote a { color: #5ab4ff; text-decoration: none; }
+    .footnote a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dipper CO. Moon Phase with Custom Frame</h1>
+    <p class="note">Note: Will Only Work for Dates January 1, 2011 to December 31, 2025.</p>
+
+    <label for="date">Date</label>
+    <input type="date" id="date" min="2011-01-01" max="2025-12-31" />
+    <label for="time">Time (Local)</label>
+    <input type="time" id="time" />
+    <button onclick="getMoonData()">Get Moon Phase</button>
+
+    <div id="image-preview"></div>
+
+    <div class="info">
+      <p><strong>Illumination:</strong> <span id="illumination">–</span>%</p>
+      <p><strong>Phase:</strong> <span id="phaseName">Unknown</span></p>
+      <p><strong>Moon Age:</strong> <span id="age">–</span> days</p>
+      <p><strong>Distance:</strong> <span id="distance">–</span> km</p>
+    </div>
+
+    <div class="footnote">
+      This demo site is still under development, so you may encounter a few glitches or inaccuracies.
+For questions or more information, feel free to message us on our Facebook page:  
+      <a href="https://www.facebook.com/dipperco" target="_blank">Dipper Co.</a>
+    </div>
+  </div>
+
+  <script>
+    function getMoonData() {
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      if (!date || !time) return alert('Please enter both date and time.');
+
+      const localDateTime = new Date(`${date}T${time}`);
+      const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
+      const isoTime = utcDateTime.toISOString().slice(0, 16);
+      const apiUrl = `https://svs.gsfc.nasa.gov/api/dialamoon/${isoTime}`;
+
+      fetch(apiUrl)
+        .then(res => res.json())
+        .then(data => {
+          const illumination = parseFloat(data.phase).toFixed(2);
+          const age = parseFloat(data.age).toFixed(2);
+          const distance = data.distance ? parseFloat(data.distance).toLocaleString() : 'Unavailable';
+
+          document.getElementById('illumination').innerText = illumination;
+          document.getElementById('age').innerText = age;
+          document.getElementById('distance').innerText = distance;
+
+          let phaseName = 'Unknown';
+          const illum = parseFloat(illumination);
+          if (illum < 1) phaseName = 'New Moon';
+          else if (illum < 25) phaseName = 'Waxing Crescent';
+          else if (illum < 50) phaseName = 'First Quarter';
+          else if (illum < 99) phaseName = 'Waxing Gibbous';
+          else if (illum >= 99) phaseName = 'Full Moon';
+          if (illum < 99 && age > 14.77) {
+            if (illum > 50) phaseName = 'Waning Gibbous';
+            else if (illum > 25) phaseName = 'Last Quarter';
+            else phaseName = 'Waning Crescent';
+          }
+          document.getElementById('phaseName').innerText = phaseName;
+
+          const imageUrl = data.image?.url || data.image_highres?.url || '';
+          const preview = document.getElementById('image-preview');
+
+          if (imageUrl) {
+            preview.innerHTML = `
+              <div class="frame-wrapper">
+                <img src="${imageUrl}" alt="Moon Image" class="moon-image" />
+              </div>`;
+          } else {
+            preview.innerHTML = '<p>No image available</p>';
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert('Failed to fetch moon data. Please try again.');
+        });
+    }
+  </script>
+</body>
+</html>

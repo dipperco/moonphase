@@ -3,95 +3,73 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dipper Co Moon Phase Version 1.0</title>
+  <title>Your Moments Under the Moon by Dipper Co.</title>
   <style>
-    body {
-      font-family: Panton, sans-serif;
-      padding: 20px;
-      background: #000;
-      color: #fff;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      text-align: center;
-    }
-    label, input, button {
-      margin-top: 10px;
-      display: block;
-      width: 100%;
-    }
-    img {
-      margin-top: 20px;
-      max-width: 100%;
-      height: auto;
-      border: 2px solid #fff;
-    }
-    .info {
-      margin-top: 20px;
-      font-size: 1.2em;
-    }
-    .download-link {
-      margin-top: 10px;
+    body { background: #000; color: #fff; font-family: Panton, sans-serif; padding: 20px; }
+    .container { max-width: 600px; margin: auto; text-align: center; }
+    label, input, button { margin-top: 10px; display: block; width: 100%; }
+
+    /* Frame wrapper */
+    .frame-wrapper {
+      position: relative;
       display: inline-block;
-      background: #1a1a1a;
-      padding: 10px;
-      color: #0ff;
-      border-radius: 5px;
-      text-decoration: none;
+      margin-top: 20px;
+      width: 350px;  /* Increased size */
+      height: 350px;
+      background: url('assets/frame.png') no-repeat center / contain;
     }
-    .download-link:hover {
-      background: #333;
+
+    /* Moon image inside the frame */
+    .moon-image {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300px;  /* Bigger moon */
+      height: 300px;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      border-radius: 50%;
     }
+
+    .info { margin-top: 20px; font-size: 1.2em; }
+    .note { margin-top: 15px; font-size: 0.9em; color: #ccc; }
+    .footnote { margin-top: 30px; font-size: 0.85em; color: #999; }
+    .footnote a { color: #5ab4ff; text-decoration: none; }
+    .footnote a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Dipper Co. Moon Phase Version 1.0</h1>
+    <h1>Dipper CO. Moon Phase with Custom Frame</h1>
+    <p class="note">Note: Will Only Work for Dates January 1, 2011 to December 31, 2025.</p>
+
     <label for="date">Date</label>
-    <input type="date" id="date" min="2011-01-01">
-
+    <input type="date" id="date" min="2011-01-01" max="2025-12-31" />
     <label for="time">Time (Local)</label>
-    <input type="time" id="time">
-
+    <input type="time" id="time" />
     <button onclick="getMoonData()">Get Moon Phase</button>
 
     <div id="image-preview"></div>
+
     <div class="info">
-      <p><strong>Illumination:</strong> <span id="illumination">-</span>%</p>
+      <p><strong>Illumination:</strong> <span id="illumination">–</span>%</p>
       <p><strong>Phase:</strong> <span id="phaseName">Unknown</span></p>
-      <p><strong>Moon Age:</strong> <span id="age">-</span> days</p>
-      <p><strong>Distance:</strong> <span id="distance">-</span> km</p>
+      <p><strong>Moon Age:</strong> <span id="age">–</span> days</p>
+      <p><strong>Distance:</strong> <span id="distance">–</span> km</p>
+    </div>
+
+    <div class="footnote">
+      This demo site is still under development, so you may encounter a few glitches or inaccuracies.
+For questions or more information, feel free to message us on our Facebook page:  
+      <a href="https://www.facebook.com/dipperco" target="_blank">Dipper Co.</a>
     </div>
   </div>
 
   <script>
-    const tifFolderMap = {
-      2011: "a000000/a003800/a003810",
-      2012: "a000000/a003800/a003894",
-      2013: "a000000/a004000/a004000",
-      2014: "a000000/a004100/a004118",
-      2015: "a000000/a004200/a004236",
-      2016: "a000000/a004400/a004404",
-      2017: "a000000/a004500/a004537",
-      2018: "a000000/a004600/a004604",
-      2019: "a000000/a004400/a004442",
-      2020: "a000000/a004700/a004768",
-      2021: "a000000/a004800/a004874",
-      2022: "a000000/a004900/a004955",
-      2023: "a000000/a005000/a005048",
-      2024: "a000000/a005100/a005187",
-      2025: "a000000/a005400/a005415"
-    };
-
     function getMoonData() {
       const date = document.getElementById('date').value;
       const time = document.getElementById('time').value;
-
-      if (!date || !time) {
-        alert('Please enter both date and time');
-        return;
-      }
+      if (!date || !time) return alert('Please enter both date and time.');
 
       const localDateTime = new Date(`${date}T${time}`);
       const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
@@ -104,13 +82,11 @@
           const illumination = parseFloat(data.phase).toFixed(2);
           const age = parseFloat(data.age).toFixed(2);
           const distance = data.distance ? parseFloat(data.distance).toLocaleString() : 'Unavailable';
-          const jpgUrl = data.image?.url || data.image_highres?.url || '';
 
           document.getElementById('illumination').innerText = illumination;
           document.getElementById('age').innerText = age;
           document.getElementById('distance').innerText = distance;
 
-          // Determine phase name
           let phaseName = 'Unknown';
           const illum = parseFloat(illumination);
           if (illum < 1) phaseName = 'New Moon';
@@ -125,25 +101,20 @@
           }
           document.getElementById('phaseName').innerText = phaseName;
 
-          // Determine year and frame number
-          const year = new Date(date).getFullYear();
-          const frameMatch = jpgUrl.match(/moon\.(\d+)\.jpg/);
-          let tifLink = '';
+          const imageUrl = data.image?.url || data.image_highres?.url || '';
+          const preview = document.getElementById('image-preview');
 
-          if (frameMatch && tifFolderMap[year]) {
-            const frameNumber = frameMatch[1];
-            tifLink = `https://svs.gsfc.nasa.gov/vis/${tifFolderMap[year]}/frames/1920x1080_16x9_30p/plain/moon.${frameNumber}.tif`;
-
-            document.getElementById('image-preview').innerHTML = `
-              <img src="${jpgUrl}" alt="Moon Image">
-              <a href="${tifLink}" class="download-link" download>⬇ Download High-Res TIF</a>
-            `;
+          if (imageUrl) {
+            preview.innerHTML = `
+              <div class="frame-wrapper">
+                <img src="${imageUrl}" alt="Moon Image" class="moon-image" />
+              </div>`;
           } else {
-            document.getElementById('image-preview').innerHTML = '<p>No image available</p>';
+            preview.innerHTML = '<p>No image available</p>';
           }
         })
         .catch(err => {
-          console.error('Error fetching moon data:', err);
+          console.error(err);
           alert('Failed to fetch moon data. Please try again.');
         });
     }
